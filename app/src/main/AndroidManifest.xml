@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Needed on Android 11+ so QuickBill can reliably detect whether
+         WhatsApp is installed before trying to hand off a bill to it. -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+    </queries>
+
     <application
         android:name=".QuickBillApplication"
         android:allowBackup="true"

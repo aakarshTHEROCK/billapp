@@ -14,12 +14,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,6 +34,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,11 +42,14 @@ import androidx.compose.ui.unit.sp
 import com.quickbill.app.QuickBillApplication
 import com.quickbill.app.data.Bill
 import com.quickbill.app.data.Money
+import com.quickbill.app.ui.components.AppCard
+import com.quickbill.app.ui.components.IconBadge
 import com.quickbill.app.ui.components.PrimaryButton
 import com.quickbill.app.ui.components.SecondaryButton
 import com.quickbill.app.ui.theme.Background
-import com.quickbill.app.ui.theme.Line
-import com.quickbill.app.ui.theme.Surface
+import com.quickbill.app.ui.theme.Blue
+import com.quickbill.app.ui.theme.BlueContainer
+import com.quickbill.app.ui.theme.BlueDark
 import com.quickbill.app.ui.theme.TextSecondary
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -62,50 +69,69 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp)
         ) {
+            // Hero header - a solid block of color rather than a flat white
+            // top, so the app reads as designed rather than a bare form.
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Color(0xFF126FEF),
+                        RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
+                    )
+                    .padding(horizontal = 24.dp, vertical = 28.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
                 Column {
-                    Text("QuickBill", style = MaterialTheme.typography.headlineLarge)
+                    Text(
+                        "QuickBill",
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
                     Text(
                         "Create and share bills easily.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+                        fontSize = 15.sp,
+                        color = Color.White.copy(alpha = 0.85f),
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
-                IconButton(onClick = onBusinessDetails) {
-                    Icon(Icons.Filled.Storefront, contentDescription = "Business details")
+                IconButton(
+                    onClick = onBusinessDetails,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(Color.White.copy(alpha = 0.18f), CircleShape)
+                ) {
+                    Icon(Icons.Filled.Storefront, contentDescription = "Business details", tint = Color.White)
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+                Spacer(Modifier.height(4.dp))
 
-            PrimaryButton(
-                text = "Create New Bill",
-                icon = Icons.Filled.Add,
-                height = 68.dp,
-                onClick = onCreateBill
-            )
+                PrimaryButton(
+                    text = "Create New Bill",
+                    icon = Icons.Filled.Add,
+                    height = 68.dp,
+                    onClick = onCreateBill
+                )
 
-            Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(14.dp))
 
-            SecondaryButton(
-                text = "Bill History",
-                icon = Icons.Filled.History,
-                onClick = onBillHistory
-            )
+                SecondaryButton(
+                    text = "Bill History",
+                    icon = Icons.Filled.History,
+                    onClick = onBillHistory
+                )
 
-            if (recentBills.isNotEmpty()) {
-                Spacer(Modifier.height(32.dp))
-                Text("Recent Bills", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(10.dp))
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    items(recentBills) { bill -> RecentBillRow(bill) { onOpenBill(bill.id) } }
+                if (recentBills.isNotEmpty()) {
+                    Spacer(Modifier.height(32.dp))
+                    Text("Recent Bills", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(10.dp))
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(recentBills) { bill -> RecentBillRow(bill) { onOpenBill(bill.id) } }
+                    }
                 }
             }
         }
@@ -114,23 +140,30 @@ fun HomeScreen(
 
 @Composable
 private fun RecentBillRow(bill: Bill, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Surface, RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column {
-            Text(bill.invoiceNumber, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-            Text(
-                bill.customerName.ifBlank { "Walk-in customer" },
-                color = TextSecondary,
-                fontSize = 14.sp
-            )
+    AppCard(onClick = onClick) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconBadge(
+                    icon = Icons.Filled.ReceiptLong,
+                    tint = Blue,
+                    containerColor = BlueContainer,
+                    size = 40.dp
+                )
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(bill.invoiceNumber, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                    Text(
+                        bill.customerName.ifBlank { "Walk-in customer" },
+                        color = TextSecondary,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+            Text(Money.format(bill.total), fontWeight = FontWeight.Bold, fontSize = 17.sp, color = BlueDark)
         }
-        Text(Money.format(bill.total), fontWeight = FontWeight.Bold, fontSize = 17.sp)
     }
 }

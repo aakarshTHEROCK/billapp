@@ -48,13 +48,14 @@ import com.quickbill.app.data.BillItem
 import com.quickbill.app.data.Money
 import com.quickbill.app.data.Prefs
 import com.quickbill.app.pdf.InvoicePdf
+import com.quickbill.app.ui.components.AppCard
 import com.quickbill.app.ui.components.LargeTextField
 import com.quickbill.app.ui.components.PrimaryButton
 import com.quickbill.app.ui.components.SecondaryButton
 import com.quickbill.app.ui.components.WhatsAppButton
 import com.quickbill.app.ui.theme.Background
 import com.quickbill.app.ui.theme.Line
-import com.quickbill.app.ui.theme.Surface
+import com.quickbill.app.ui.theme.WhatsAppGreen
 import com.quickbill.app.whatsapp.WhatsAppResult
 import com.quickbill.app.whatsapp.WhatsAppShare
 import kotlinx.coroutines.launch
@@ -71,6 +72,7 @@ fun PreviewScreen(billId: Long, onBack: () -> Unit, onDone: () -> Unit) {
     var bill by remember { mutableStateOf<Bill?>(null) }
     var showWhatsAppDialog by remember { mutableStateOf(false) }
     var toastMessage by remember { mutableStateOf<String?>(null) }
+    var toastIsError by remember { mutableStateOf(true) }
 
     LaunchedEffect(billId) {
         bill = app.database.billDao().getById(billId)
@@ -109,8 +111,9 @@ fun PreviewScreen(billId: Long, onBack: () -> Unit, onDone: () -> Unit) {
                 if (toastMessage != null) {
                     Text(
                         toastMessage!!,
-                        color = MaterialTheme.colorScheme.error,
+                        color = if (toastIsError) MaterialTheme.colorScheme.error else WhatsAppGreen,
                         fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                 }
@@ -122,9 +125,11 @@ fun PreviewScreen(billId: Long, onBack: () -> Unit, onDone: () -> Unit) {
                         try {
                             val file = InvoicePdf.generate(context, currentBill, prefs.getBusinessDetails())
                             if (!WhatsAppShare.shareGeneric(context, file)) {
+                                toastIsError = true
                                 toastMessage = "Could not create the PDF. Please try again."
                             }
                         } catch (e: Exception) {
+                            toastIsError = true
                             toastMessage = "Could not create the PDF. Please try again."
                         }
                     }
@@ -142,21 +147,29 @@ fun PreviewScreen(billId: Long, onBack: () -> Unit, onDone: () -> Unit) {
                     try {
                         val file = InvoicePdf.generate(context, bill!!, prefs.getBusinessDetails())
                         when (WhatsAppShare.send(context, number, file)) {
-                            is WhatsAppResult.Sent -> {
+                            is WhatsAppResult.ChatOpened -> {
                                 showWhatsAppDialog = false
-                                toastMessage = null
+                                toastIsError = false
+                                toastMessage = "WhatsApp is opening the chat for this number. " +
+                                    "Tap the top contact in the list that appears, then tap Send."
                             }
-                            is WhatsAppResult.InvalidNumber -> toastMessage = "Please enter a valid WhatsApp number."
+                            is WhatsAppResult.InvalidNumber -> {
+                                toastIsError = true
+                                toastMessage = "Please enter a valid WhatsApp number."
+                            }
                             is WhatsAppResult.NotInstalled -> {
                                 showWhatsAppDialog = false
+                                toastIsError = true
                                 toastMessage = "WhatsApp is not installed on this phone."
                             }
                             is WhatsAppResult.Failed -> {
                                 showWhatsAppDialog = false
+                                toastIsError = true
                                 toastMessage = "Could not open WhatsApp. Please try again."
                             }
                         }
                     } catch (e: Exception) {
+                        toastIsError = true
                         toastMessage = "Could not create the PDF. Please try again."
                     }
                 }
@@ -186,6 +199,14 @@ private fun WhatsAppNumberDialog(initialNumber: String, onDismiss: () -> Unit, o
                     isError = error,
                     supportingText = if (error) "Please enter a valid WhatsApp number." else null
                 )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "WhatsApp will open the chat for this number. If it isn't saved as a contact, " +
+                        "WhatsApp will then show a short list to send the bill to - just tap the top " +
+                        "one (this number) and then Send.",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         },
         confirmButton = {
@@ -204,11 +225,7 @@ private fun WhatsAppNumberDialog(initialNumber: String, onDismiss: () -> Unit, o
 
 @Composable
 private fun InvoiceCard(bill: Bill, business: com.quickbill.app.data.BusinessDetails) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
-    ) {
+    AppCard {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(business.shopName, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             if (business.address.isNotBlank()) Text(business.address, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)

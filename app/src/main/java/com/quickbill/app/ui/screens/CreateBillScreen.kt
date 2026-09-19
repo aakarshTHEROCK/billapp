@@ -60,11 +60,15 @@ import com.quickbill.app.data.Bill
 import com.quickbill.app.data.BillItem
 import com.quickbill.app.data.Money
 import com.quickbill.app.data.Prefs
+import com.quickbill.app.ui.components.AppCard
 import com.quickbill.app.ui.components.ConfirmDialog
+import com.quickbill.app.ui.components.IconBadge
 import com.quickbill.app.ui.components.LargeTextField
 import com.quickbill.app.ui.components.PrimaryButton
 import com.quickbill.app.ui.components.SecondaryButton
 import com.quickbill.app.ui.theme.Background
+import com.quickbill.app.ui.theme.Blue
+import com.quickbill.app.ui.theme.BlueContainer
 import com.quickbill.app.ui.theme.ErrorRed
 import com.quickbill.app.ui.theme.Line
 import com.quickbill.app.ui.theme.Surface
@@ -225,16 +229,10 @@ fun CreateBillScreen(onBack: () -> Unit, onBillGenerated: (Long) -> Unit) {
 private fun ItemCard(draft: ItemDraft, onErrorCleared: () -> Unit, onDelete: () -> Unit) {
     var discountExpanded by remember { mutableStateOf(false) }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, Line)
-    ) {
+    AppCard {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Checkroom, contentDescription = "Garment", tint = MaterialTheme.colorScheme.primary)
+                IconBadge(icon = Icons.Filled.Checkroom, tint = Blue, containerColor = BlueContainer, size = 36.dp, contentDescription = "Garment")
                 Spacer(Modifier.width(10.dp))
                 OutlinedTextField(
                     value = draft.name,
@@ -355,11 +353,7 @@ private fun QuantityStepper(quantity: Int, onChange: (Int) -> Unit, modifier: Mo
 
 @Composable
 private fun SummaryCard(subtotal: Double, discountTotal: Double, total: Double) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
-    ) {
+    AppCard {
         Column(modifier = Modifier.padding(18.dp)) {
             SummaryRow("Subtotal", Money.format(subtotal))
             Spacer(Modifier.height(6.dp))

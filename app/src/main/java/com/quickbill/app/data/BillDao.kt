@@ -21,4 +21,8 @@ interface BillDao {
 
     @Query("SELECT COUNT(*) FROM bills")
     suspend fun count(): Int
+
+    /** Bills are kept locally for a limited time only; see QuickBillApplication's retention policy. */
+    @Query("DELETE FROM bills WHERE dateMillis < :cutoffMillis")
+    suspend fun deleteOlderThan(cutoffMillis: Long)
 }

@@ -8,7 +8,8 @@ import androidx.core.content.FileProvider
 import java.io.File
 
 sealed class WhatsAppResult {
-    object Sent : WhatsAppResult()
+    /** WhatsApp opened the right chat; the PDF was handed to WhatsApp for the user to send. */
+    object ChatOpened : WhatsAppResult()
     object InvalidNumber : WhatsAppResult()
     object NotInstalled : WhatsAppResult()
     data class Failed(val message: String) : WhatsAppResult()
@@ -17,22 +18,26 @@ sealed class WhatsAppResult {
 /**
  * QuickBill's WhatsApp handoff.
  *
- * Android/WhatsApp do not give a third-party app a way to both (a) target an
- * arbitrary, unsaved phone number AND (b) attach a specific file, in a single
- * intent that is guaranteed to work across every WhatsApp version - and no
- * app can make WhatsApp send a message without the user pressing Send
- * themselves. What we do instead, and what this class implements:
+ * The real constraint, stated plainly: no third-party app can open a specific
+ * WhatsApp chat for an arbitrary, unsaved number AND have a file already
+ * attached, in one step that WhatsApp is guaranteed to honor - and no app can
+ * make WhatsApp send a message without the user pressing Send themselves.
  *
- *  1. Normalize the entered number to a WhatsApp "jid" and try
- *     ACTION_SEND with the PDF attached, targeted at that jid via WhatsApp's
- *     own package. On current WhatsApp this opens the correct chat with the
- *     PDF already attached, ready for the user to press Send.
- *  2. If that is not resolvable on this device (older/newer WhatsApp
- *     builds, or WhatsApp Business), fall back to opening the exact chat for
- *     that number via the documented wa.me deep link, and separately hand
- *     the PDF to WhatsApp through a share intent scoped only to WhatsApp
- *     (never a generic Email/SMS chooser) so the user can attach and send it
- *     with one more tap inside WhatsApp.
+ * An earlier build tried an undocumented "jid" extra on ACTION_SEND to do
+ * both at once. On many WhatsApp versions that silently fails, and WhatsApp
+ * falls back to showing its own full contact list instead of the intended
+ * chat - which is exactly the confusing behaviour reported for numbers that
+ * aren't saved as contacts.
+ *
+ * This version uses WhatsApp's own documented "click to chat" link
+ * (api.whatsapp.com/send?phone=...) instead, which reliably opens the exact
+ * chat for any number, saved or not - WhatsApp creates the chat if it
+ * doesn't exist yet. Right after that, the PDF is handed to WhatsApp only
+ * (never a generic Email/SMS chooser). Because the chat just opened is now
+ * WhatsApp's most recently used conversation, it appears as the top option
+ * in the short "send to" list WhatsApp shows - so the user taps the top
+ * item, then Send, inside WhatsApp. That one extra tap is an Android/WhatsApp
+ * limitation, not something QuickBill can skip.
  */
 object WhatsAppShare {
 
@@ -65,28 +70,20 @@ object WhatsAppShare {
             return WhatsAppResult.Failed("Could not attach the invoice PDF.")
         }
 
-        // Attempt 1: direct-to-chat with the PDF attached.
-        try {
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "application/pdf"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra("jid", "$number@s.whatsapp.net")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        return try {
+            // Step 1: open the exact chat for this number - works for saved
+            // and unsaved numbers alike, and never shows a contact list.
+            val chatIntent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://api.whatsapp.com/send?phone=$number")
+            ).apply {
                 setPackage(installedPackage)
             }
-            context.startActivity(intent)
-            return WhatsAppResult.Sent
-        } catch (e: ActivityNotFoundException) {
-            // fall through to the fallback below
-        } catch (e: Exception) {
-            // fall through to the fallback below
-        }
-
-        // Fallback: open the exact chat, then hand off the PDF to WhatsApp only.
-        return try {
-            val chatIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$number"))
             context.startActivity(chatIntent)
 
+            // Step 2: hand the PDF to WhatsApp only. The chat opened above is
+            // now WhatsApp's most recent conversation, so it appears first in
+            // the short list WhatsApp shows here.
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "application/pdf"
                 putExtra(Intent.EXTRA_STREAM, uri)
@@ -94,7 +91,7 @@ object WhatsAppShare {
                 setPackage(installedPackage)
             }
             context.startActivity(shareIntent)
-            WhatsAppResult.Sent
+            WhatsAppResult.ChatOpened
         } catch (e: ActivityNotFoundException) {
             WhatsAppResult.NotInstalled
         } catch (e: Exception) {

@@ -11,13 +11,16 @@ import androidx.compose.ui.unit.sp
 
 val Blue = Color(0xFF126FEF)
 val BlueDark = Color(0xFF0B56C5)
-val Background = Color(0xFFF7F9FC)
+val BlueContainer = Color(0xFFE5F0FF)
+val Background = Color(0xFFF3F6FB)
 val Surface = Color(0xFFFFFFFF)
 val TextPrimary = Color(0xFF172033)
 val TextSecondary = Color(0xFF5B6478)
 val Line = Color(0xFFE1E6EE)
 val WhatsAppGreen = Color(0xFF159447)
+val WhatsAppGreenContainer = Color(0xFFE3F5EA)
 val ErrorRed = Color(0xFFC43D3D)
+val ErrorRedContainer = Color(0xFFFBEAEA)
 
 private val QuickBillColors = lightColorScheme(
     primary = Blue,
@@ -33,7 +36,8 @@ private val QuickBillColors = lightColorScheme(
     surfaceVariant = Background,
     onSurfaceVariant = TextSecondary,
     error = ErrorRed,
-    outline = Line
+    outline = Line,
+    surfaceTint = Color.Transparent
 )
 
 private val QuickBillTypography = Typography(

@@ -30,9 +30,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.quickbill.app.data.BusinessDetails
 import com.quickbill.app.data.Prefs
+import com.quickbill.app.ui.components.AppCard
 import com.quickbill.app.ui.components.LargeTextField
 import com.quickbill.app.ui.components.PrimaryButton
 import com.quickbill.app.ui.theme.Background
+import com.quickbill.app.ui.theme.WhatsAppGreen
 
 @Composable
 fun BusinessDetailsScreen(onBack: () -> Unit) {
@@ -69,19 +71,23 @@ fun BusinessDetailsScreen(onBack: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 20.dp)
             )
-            LargeTextField(value = shopName, onValueChange = { shopName = it }, label = "Shop / Business name")
-            Spacer(Modifier.height(14.dp))
-            LargeTextField(value = address, onValueChange = { address = it }, label = "Address")
-            Spacer(Modifier.height(14.dp))
-            LargeTextField(
-                value = phone,
-                onValueChange = { phone = it },
-                label = "Phone",
-                keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
-            )
-            Spacer(Modifier.height(14.dp))
-            LargeTextField(value = gstin, onValueChange = { gstin = it }, label = "GSTIN (optional)")
-            Spacer(Modifier.height(28.dp))
+            AppCard {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    LargeTextField(value = shopName, onValueChange = { shopName = it }, label = "Shop / Business name")
+                    Spacer(Modifier.height(14.dp))
+                    LargeTextField(value = address, onValueChange = { address = it }, label = "Address")
+                    Spacer(Modifier.height(14.dp))
+                    LargeTextField(
+                        value = phone,
+                        onValueChange = { phone = it },
+                        label = "Phone",
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    LargeTextField(value = gstin, onValueChange = { gstin = it }, label = "GSTIN (optional)")
+                }
+            }
+            Spacer(Modifier.height(24.dp))
             PrimaryButton(text = "Save") {
                 prefs.saveBusinessDetails(
                     BusinessDetails(
@@ -96,7 +102,7 @@ fun BusinessDetailsScreen(onBack: () -> Unit) {
             }
             if (savedMessage) {
                 Spacer(Modifier.height(12.dp))
-                Text("Saved.", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                Text("Saved.", color = WhatsAppGreen, fontWeight = FontWeight.Medium)
             }
         }
     }
