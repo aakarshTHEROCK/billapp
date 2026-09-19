@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- receipt / bill shape, centered in the adaptive-icon safe zone -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M37,28 L71,28 L71,80 L64,74 L57,80 L50,74 L43,80 L37,74 Z" />
+    <path
+        android:fillColor="#126FEF"
+        android:pathData="M43,40 L65,40 L65,44 L43,44 Z" />
+    <path
+        android:fillColor="#126FEF"
+        android:pathData="M43,50 L65,50 L65,54 L43,54 Z" />
+    <path
+        android:fillColor="#126FEF"
+        android:pathData="M43,60 L58,60 L58,64 L43,64 Z" />
+</vector>

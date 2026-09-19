@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="blue">#126FEF</color>
+    <color name="blue_dark">#0B56C5</color>
+    <color name="bg">#F7F9FC</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="text_primary">#172033</color>
+    <color name="text_secondary">#5B6478</color>
+    <color name="line">#E1E6EE</color>
+    <color name="whatsapp_green">#159447</color>
+    <color name="error_red">#C43D3D</color>
+    <color name="white">#FFFFFF</color>
+</resources>
