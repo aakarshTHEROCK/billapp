@@ -21,14 +21,17 @@ jobs:
           java-version: '17'
 
       - name: Ensure Android SDK platform & build-tools are installed
+        shell: bash
         run: |
-          set -e
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          if [ ! -f "$SDKMANAGER" ]; then
-            SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n1)
-          fi
-          yes | "$SDKMANAGER" --licenses > /dev/null || true
-          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          set -o pipefail
+          {
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+            if [ ! -f "$SDKMANAGER" ]; then
+              SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n1)
+            fi
+            yes | "$SDKMANAGER" --licenses > /dev/null || true
+            "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          } 2>&1 | tee /tmp/sdk-setup.log
 
       - name: Generate a signing keystore
         run: |
@@ -43,12 +46,18 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace --no-daemon
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew :app:assembleDebug --stacktrace --no-daemon 2>&1 | tee /tmp/build-debug.log
         env:
           QUICKBILL_KEYSTORE: ${{ github.workspace }}/quickbill-release.keystore
 
       - name: Build release APK
-        run: ./gradlew :app:assembleRelease --stacktrace --no-daemon
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew :app:assembleRelease --stacktrace --no-daemon 2>&1 | tee /tmp/build-release.log
         env:
           QUICKBILL_KEYSTORE: ${{ github.workspace }}/quickbill-release.keystore
 
@@ -84,3 +93,29 @@ jobs:
           git add QuickBill-debug.apk QuickBill-release.apk BUILD_INFO.txt
           git commit -m "Built APKs for ${GITHUB_SHA}"
           git push --force origin HEAD:build-output
+
+      - name: Publish failure diagnostics
+        if: failure()
+        run: |
+          mkdir -p /tmp/fail-out
+          {
+            echo "=== QuickBill CI failure for commit ${GITHUB_SHA} ==="
+            echo
+            echo "--- sdk-setup.log (tail) ---"
+            tail -c 20000 /tmp/sdk-setup.log 2>/dev/null || echo "(no sdk-setup log captured)"
+            echo
+            echo "--- build-debug.log (tail) ---"
+            tail -c 60000 /tmp/build-debug.log 2>/dev/null || echo "(no debug log captured)"
+            echo
+            echo "--- build-release.log (tail) ---"
+            tail -c 60000 /tmp/build-release.log 2>/dev/null || echo "(no release log captured)"
+          } > /tmp/fail-out/FAILURE_INFO.txt
+          cd "$GITHUB_WORKSPACE"
+          git config user.name "QuickBill CI"
+          git config user.email "ci@quickbill.local"
+          git checkout --orphan build-failed
+          git rm -rf . > /dev/null 2>&1 || true
+          cp /tmp/fail-out/FAILURE_INFO.txt .
+          git add FAILURE_INFO.txt
+          git commit -m "Failure diagnostics for ${GITHUB_SHA}"
+          git push --force origin HEAD:build-failed
