@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,3 +66,21 @@ jobs:
         with:
           name: QuickBill-release
           path: app/build/outputs/apk/release/*.apk
+
+      - name: Publish APKs to build-output branch
+        run: |
+          set -e
+          mkdir -p /tmp/apk-out
+          cp app/build/outputs/apk/debug/*.apk /tmp/apk-out/QuickBill-debug.apk
+          cp app/build/outputs/apk/release/*.apk /tmp/apk-out/QuickBill-release.apk
+          echo "Built from commit ${GITHUB_SHA} at $(date -u +%Y-%m-%dT%H:%M:%SZ)" > /tmp/apk-out/BUILD_INFO.txt
+          cd "$GITHUB_WORKSPACE"
+          git config user.name "QuickBill CI"
+          git config user.email "ci@quickbill.local"
+          git checkout --orphan build-output
+          git rm -rf . > /dev/null 2>&1 || true
+          cp /tmp/apk-out/*.apk .
+          cp /tmp/apk-out/BUILD_INFO.txt .
+          git add QuickBill-debug.apk QuickBill-release.apk BUILD_INFO.txt
+          git commit -m "Built APKs for ${GITHUB_SHA}"
+          git push --force origin HEAD:build-output
